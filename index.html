@@ -1,0 +1,1109 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>武器查询系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            height: 100vh;
+            font-family: "Microsoft YaHei", sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+        }
+
+        .left-panel {
+            width: 25%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-section {
+            height: 40%;
+            padding: 20px;
+            background: #16213e;
+            border-bottom: 1px solid #0f3460;
+            overflow-y: auto;
+        }
+
+        .filter-section h3 {
+            color: #e94560;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .filter-group {
+            margin-bottom: 16px;
+        }
+
+        .filter-group-title {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 8px;
+        }
+
+        .filter-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .filter-option {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 8px;
+            background: #1a1a2e;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .filter-option:hover {
+            background: #0f3460;
+        }
+
+        .filter-option input {
+            display: none;
+        }
+
+        .filter-option .checkmark {
+            width: 12px;
+            height: 12px;
+            border: 2px solid #e94560;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .filter-option.selected .checkmark {
+            background: #e94560;
+        }
+
+        .filter-option.selected .checkmark::after {
+            content: "✓";
+            color: #fff;
+            font-size: 9px;
+        }
+
+        .item-list-section {
+            height: 60%;
+            background: #0f3460;
+            overflow-y: auto;
+        }
+
+        .item-list-header {
+            padding: 12px 20px;
+            background: #16213e;
+            border-bottom: 1px solid #1a1a2e;
+            font-size: 14px;
+            color: #e94560;
+            position: sticky;
+            top: 0;
+        }
+
+        .item-list {
+            padding: 10px;
+        }
+
+        .item-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: #16213e;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .item-card:hover {
+            background: #1a1a2e;
+        }
+
+        .item-card.selected {
+            border-color: #e94560;
+            background: #1a1a2e;
+        }
+
+        .item-icon {
+            font-size: 24px;
+            width: 36px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .item-name {
+            font-size: 13px;
+            margin-bottom: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .item-meta {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: #888;
+        }
+
+        .item-rarity {
+            font-weight: bold;
+        }
+
+        .rarity-6 { color: #FFD700; }
+        .rarity-5 { color: #9966FF; }
+        .rarity-4 { color: #6699FF; }
+
+        .item-attrs {
+            font-size: 10px;
+            color: #666;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .right-panel {
+            width: 75%;
+            background: #16213e;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-header {
+            padding: 25px 30px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-bottom: 1px solid #0f3460;
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .detail-icon {
+            font-size: 64px;
+            background: #0f3460;
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            flex-shrink: 0;
+        }
+
+        .detail-title {
+            flex: 1;
+        }
+
+        .detail-title h1 {
+            font-size: 26px;
+            margin-bottom: 6px;
+        }
+
+        .detail-title .meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        .detail-title .type-icon {
+            font-size: 16px;
+        }
+
+        .detail-title .short {
+            margin-top: 8px;
+            font-size: 13px;
+            color: #e94560;
+            font-style: italic;
+        }
+
+        .detail-content {
+            padding: 25px 30px;
+            overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .detail-section {
+            margin-bottom: 0;
+        }
+
+        .detail-section h3 {
+            color: #e94560;
+            font-size: 13px;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #0f3460;
+        }
+
+        .attr-display {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .attr-tag {
+            padding: 6px 14px;
+            background: #1a1a2e;
+            border-radius: 16px;
+            font-size: 12px;
+        }
+
+        .attr-tag.pos1 {
+            border: 1px solid #e94560;
+            color: #e94560;
+        }
+
+        .attr-tag.pos2 {
+            border: 1px solid #4ecca3;
+            color: #4ecca3;
+        }
+
+        .attr-tag.pos3 {
+            border: 1px solid #ffd700;
+            color: #ffd700;
+        }
+
+        .obtain-section h3 {
+            color: #4ecca3;
+        }
+
+        .dungeon-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .dungeon-item {
+            background: #1a1a2e;
+            border-radius: 8px;
+            padding: 12px 16px;
+        }
+
+        .dungeon-name {
+            font-size: 13px;
+            color: #eee;
+            margin-bottom: 8px;
+        }
+
+        .dungeon-pools {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .pool-tag {
+            display: inline-block;
+            padding: 2px 6px;
+            background: #16213e;
+            border-radius: 3px;
+            margin: 2px;
+        }
+
+        .pool-tag.s2 {
+            border-left: 2px solid #4ecca3;
+        }
+
+        .pool-tag.s3 {
+            border-left: 2px solid #ffd700;
+        }
+
+        .related-items {
+            border-top: 1px solid #0f3460;
+            padding-top: 10px;
+        }
+
+        .related-title {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 6px;
+        }
+
+        .related-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .related-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            background: #16213e;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .related-item:hover {
+            background: #0f3460;
+        }
+
+        .related-item.current {
+            border: 1px solid #e94560;
+        }
+
+        .empty-state {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .no-obtain {
+            color: #666;
+            font-size: 13px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1a2e;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #e94560;
+            border-radius: 3px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+                height: 100vh;
+                overflow: hidden;
+            }
+
+            .left-panel {
+                width: 100%;
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+            }
+
+            .filter-section {
+                flex: 0 0 auto;
+                max-height: 35vh;
+                padding: 12px 15px;
+                overflow-y: auto;
+            }
+
+            .filter-section h3 {
+                font-size: 13px;
+                margin-bottom: 10px;
+            }
+
+            .filter-group {
+                margin-bottom: 10px;
+            }
+
+            .filter-group-title {
+                font-size: 11px;
+                margin-bottom: 5px;
+            }
+
+            .filter-options {
+                gap: 4px;
+            }
+
+            .filter-option {
+                padding: 6px 10px;
+                font-size: 11px;
+            }
+
+            .item-list-section {
+                flex: 1;
+                min-height: 0;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+                background: #0f3460;
+            }
+
+            .item-list {
+                flex: 1;
+                min-height: 0;
+                overflow-y: auto;
+                padding: 10px;
+            }
+
+            .item-list-header {
+                padding: 10px 15px;
+                font-size: 13px;
+            }
+
+            .item-card {
+                padding: 12px;
+            }
+
+            .item-icon {
+                font-size: 28px;
+                width: 42px;
+            }
+
+            .item-name {
+                font-size: 14px;
+            }
+
+            .item-meta {
+                font-size: 12px;
+            }
+
+            .item-attrs {
+                font-size: 11px;
+            }
+
+            .right-panel {
+                width: 100%;
+                min-height: 50vh;
+                display: none;
+            }
+
+            .right-panel.active {
+                display: flex;
+            }
+
+            .detail-header {
+                padding: 15px;
+                flex-wrap: wrap;
+                gap: 15px;
+            }
+
+            .detail-icon {
+                font-size: 48px;
+                width: 70px;
+                height: 70px;
+            }
+
+            .detail-title h1 {
+                font-size: 20px;
+            }
+
+            .detail-title .meta {
+                font-size: 12px;
+                gap: 8px;
+            }
+
+            .detail-content {
+                padding: 15px;
+                gap: 16px;
+            }
+
+            .attr-display {
+                gap: 8px;
+            }
+
+            .attr-tag {
+                padding: 5px 10px;
+                font-size: 11px;
+            }
+
+            .dungeon-item {
+                padding: 10px 12px;
+            }
+
+            .dungeon-name {
+                font-size: 13px;
+            }
+
+            .dungeon-pools {
+                font-size: 10px;
+            }
+
+            .mobile-back-btn {
+                display: block;
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                width: 50px;
+                height: 50px;
+                background: #e94560;
+                border-radius: 50%;
+                color: #fff;
+                font-size: 24px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                z-index: 1000;
+                box-shadow: 0 4px 12px rgba(233, 69, 96, 0.4);
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            .mobile-filter-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 10px 15px;
+                background: #16213e;
+                border-bottom: 1px solid #0f3460;
+                cursor: pointer;
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            .mobile-filter-toggle span {
+                font-size: 13px;
+                color: #e94560;
+            }
+
+            .mobile-filter-toggle .toggle-icon {
+                font-size: 18px;
+                transition: transform 0.3s;
+            }
+
+            .mobile-filter-toggle.collapsed .toggle-icon {
+                transform: rotate(-180deg);
+            }
+
+            .filter-section.collapsed {
+                display: none;
+            }
+
+            .item-list-section {
+                height: calc(50vh - 40px);
+            }
+        }
+
+        @media (min-width: 769px) {
+            .mobile-back-btn {
+                display: none !important;
+            }
+            .mobile-filter-toggle {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="left-panel">
+        <div class="mobile-filter-toggle" id="filter-toggle">
+            <span>⚙️ 属性筛选</span>
+            <span class="toggle-icon">▼</span>
+        </div>
+        <div class="filter-section" id="filter-section">
+            <h3>属性筛选</h3>
+            <div class="filter-group">
+                <div class="filter-group-title">位置一</div>
+                <div class="filter-options" id="attr1-options"></div>
+            </div>
+            <div class="filter-group">
+                <div class="filter-group-title">位置二</div>
+                <div class="filter-options" id="attr2-options"></div>
+            </div>
+            <div class="filter-group">
+                <div class="filter-group-title">位置三</div>
+                <div class="filter-options" id="attr3-options"></div>
+            </div>
+        </div>
+        <div class="item-list-section">
+            <div class="item-list-header">命中武器 (<span id="item-count">0</span>)</div>
+            <div class="item-list" id="item-list"></div>
+        </div>
+    </div>
+    <div class="right-panel" id="detail-panel">
+        <div class="empty-state">
+            <div class="empty-state-icon">⚔️</div>
+            <div>选择武器查看详情</div>
+        </div>
+    </div>
+    <div class="mobile-back-btn" id="mobile-back-btn">←</div>
+
+    <script>
+        const TYPE_ICONS = {
+            "单手剑": "⚔️",
+            "双手剑": "🗡️",
+            "手铳": "🔫",
+            "长柄武器": "🔱",
+            "施术单元": "✨"
+        };
+
+        const DUNGEONS = [
+            {
+                id: "hub",
+                name: "四号谷地·枢纽区",
+                s2_pool: ["攻击提升", "灼热伤害提升", "电磁伤害提升", "寒冷伤害提升", "自然伤害提升", "源石技艺提升", "终结技效率提升", "法术伤害提升"],
+                s3_pool: ["强攻", "压制", "追袭", "粉碎", "流转", "效益", "巧技", "迸发"],
+            },
+            {
+                id: "research",
+                name: "四号谷地·源石研究园",
+                s2_pool: ["攻击提升", "物理伤害提升", "电磁伤害提升", "寒冷伤害提升", "自然伤害提升", "暴击率提升", "终结技效率提升", "法术伤害提升"],
+                s3_pool: ["压制", "追袭", "昂扬", "巧技", "附术", "医疗", "切骨", "效益"],
+            },
+            {
+                id: "energy",
+                name: "四号谷地·供能高地",
+                s2_pool: ["攻击提升", "生命提升", "物理伤害提升", "灼热伤害提升", "自然伤害提升", "暴击率提升", "源石技艺提升", "治疗效率提升"],
+                s3_pool: ["追袭", "粉碎", "昂扬", "残暴", "附术", "医疗", "切骨", "流转"],
+            },
+            {
+                id: "mine",
+                name: "四号谷地·矿脉源区",
+                s2_pool: ["生命提升", "物理伤害提升", "灼热伤害提升", "寒冷伤害提升", "自然伤害提升", "暴击率提升", "源石技艺提升", "治疗效率提升"],
+                s3_pool: ["强攻", "压制", "巧技", "残暴", "附术", "迸发", "夜幕", "效益"],
+            },
+            {
+                id: "wuling",
+                name: "武陵·武陵城",
+                s2_pool: ["攻击提升", "生命提升", "电磁伤害提升", "寒冷伤害提升", "暴击率提升", "终结技效率提升", "法术伤害提升", "治疗效率提升"],
+                s3_pool: ["强攻", "粉碎", "残暴", "医疗", "切骨", "迸发", "夜幕", "流转"],
+            },
+            {
+                id: "wuling-qingbo",
+                name: "武陵·清波寨",
+                s2_pool: ["生命提升", "物理伤害提升", "电磁伤害提升", "寒冷伤害提升", "源石技艺提升", "终结技效率提升", "法术伤害提升", "治疗效率提升"],
+                s3_pool: ["压制", "粉碎", "昂扬", "巧技", "医疗", "切骨", "迸发", "夜幕"],
+            },
+        ];
+
+        const ALL_S1 = ["力量提升", "敏捷提升", "智识提升", "意志提升", "主能力提升"];
+
+        const DATA = {
+            items: [
+                { id: 1, name: "望乡", rarity: 6, type: "手铳", s1: "敏捷提升", s2: "寒冷伤害提升", s3: "压制" },
+                { id: 2, name: "光荣记忆", rarity: 6, type: "单手剑", s1: "敏捷提升", s2: "暴击率提升", s3: "夜幕" },
+                { id: 3, name: "狼之绯", short: "洛茜专武", chars: ["洛茜"], rarity: 6, type: "单手剑", s1: "敏捷提升", s2: "暴击率提升", s3: "切骨" },
+                { id: 4, name: "落草", short: "汤汤专武", chars: ["汤汤"], rarity: 6, type: "手铳", s1: "敏捷提升", s2: "攻击提升", s3: "迸发" },
+                { id: 5, name: "不知归", short: "骏卫专武", chars: ["骏卫"], rarity: 6, type: "单手剑", s1: "意志提升", s2: "攻击提升", s3: "流转" },
+                { id: 6, name: "热熔切割器", short: "泛用最强拐", rarity: 6, type: "单手剑", s1: "意志提升", s2: "攻击提升", s3: "流转" },
+                { id: 7, name: "使命必达", short: "洁尔佩塔专武", chars: ["洁尔佩塔"], rarity: 6, type: "施术单元", s1: "意志提升", s2: "终结技效率提升", s3: "追袭" },
+                { id: 8, name: "作品：蚀迹", short: "(建议专武或悼亡诗)洁尔佩塔下下位", rarity: 6, type: "施术单元", s1: "意志提升", s2: "自然伤害提升", s3: "压制" },
+                { id: 9, name: "爆破单元", short: "泛用最强拐·易伤", rarity: 6, type: "施术单元", s1: "主能力提升", s2: "源石技艺提升", s3: "迸发" },
+                { id: 10, name: "赫拉芬格", short: "别礼专武", chars: ["别礼"], rarity: 6, type: "双手剑", s1: "力量提升", s2: "攻击提升", s3: "迸发" },
+                { id: 11, name: "典范", short: "", chars: ["大潘"], rarity: 6, type: "双手剑", s1: "主能力提升", s2: "攻击提升", s3: "压制" },
+                { id: 12, name: "J.E.T.", rarity: 6, type: "长柄武器", s1: "主能力提升", s2: "攻击提升", s3: "压制" },
+                { id: 13, name: "宏愿", short: "管理员专武", chars: ["管理员(女)", "管理员(男)"], rarity: 6, type: "单手剑", s1: "敏捷提升", s2: "攻击提升", s3: "附术" },
+                { id: 14, name: "艺术暴君", short: "伊冯专武", chars: ["伊冯"], rarity: 6, type: "手铳", s1: "智识提升", s2: "暴击率提升", s3: "切骨" },
+                { id: 15, name: "领航者", short: "伊冯下位(大月卡武器)", rarity: 6, type: "手铳", s1: "智识提升", s2: "寒冷伤害提升", s3: "附术" },
+                { id: 16, name: "楔子", short: "泛用/伊冯下位", rarity: 6, type: "手铳", s1: "主能力提升", s2: "暴击率提升", s3: "附术" },
+                { id: 17, name: "同类相食", short: "狼卫适配", chars: ["狼卫"], rarity: 6, type: "手铳", s1: "主能力提升", s2: "法术伤害提升", s3: "附术" },
+                { id: 18, name: "负山", short: "黎风专武", chars: ["黎风"], rarity: 6, type: "长柄武器", s1: "敏捷提升", s2: "物理伤害提升", s3: "效益" },
+                { id: 19, name: "骁勇", short: "黎风适配", rarity: 6, type: "长柄武器", s1: "敏捷提升", s2: "物理伤害提升", s3: "巧技" },
+                { id: 20, name: "黯色火炬", short: "莱万汀下位", rarity: 6, type: "单手剑", s1: "智识提升", s2: "灼热伤害提升", s3: "附术" },
+                { id: 21, name: "显赫声名", rarity: 6, type: "单手剑", s1: "主能力提升", s2: "物理伤害提升", s3: "残暴" },
+                { id: 22, name: "白夜新星", rarity: 6, type: "单手剑", s1: "主能力提升", s2: "源石技艺提升", s3: "附术" },
+                { id: 23, name: "沧溟星梦", short: "艾尔黛拉专武", chars: ["艾尔黛拉"], rarity: 6, type: "施术单元", s1: "智识提升", s2: "治疗效率提升", s3: "附术" },
+                { id: 24, name: "骑士精神", short: "赛希适配", rarity: 6, type: "施术单元", s1: "意志提升", s2: "生命提升", s3: "医疗" },
+                { id: 25, name: "大雷斑", short: "余烬专武", chars: ["余烬"], rarity: 6, type: "双手剑", s1: "力量提升", s2: "生命提升", s3: "医疗" },
+                { id: 26, name: "破碎君王", rarity: 6, type: "双手剑", s1: "力量提升", s2: "暴击率提升", s3: "粉碎" },
+                { id: 27, name: "扶摇", short: "陈千语适配", chars: ["陈千语"], rarity: 6, type: "单手剑", s1: "主能力提升", s2: "暴击率提升", s3: "夜幕" },
+                { id: 28, name: "昔日精品", rarity: 6, type: "双手剑", s1: "意志提升", s2: "生命提升", s3: "效益" },
+                { id: 29, name: "熔铸火焰", short: "莱万汀专武", chars: ["莱万汀"], rarity: 6, type: "单手剑", s1: "智识提升", s2: "攻击提升", s3: "夜幕" },
+                { id: 30, name: "遗忘", rarity: 6, type: "施术单元", s1: "智识提升", s2: "法术伤害提升", s3: "夜幕" },
+                { id: 31, name: "逐鳞3.0", rarity: 5, type: "单手剑", s1: "力量提升", s2: "寒冷伤害提升", s3: "压制" },
+                { id: 32, name: "O.B.J.轻芒", rarity: 5, type: "单手剑", s1: "敏捷提升", s2: "攻击提升", s3: "流转" },
+                { id: 33, name: "O.B.J.术识", rarity: 5, type: "施术单元", s1: "智识提升", s2: "源石技艺提升", s3: "追袭" },
+                { id: 34, name: "O.B.J.迅极", rarity: 5, type: "手铳", s1: "敏捷提升", s2: "终结技效率提升", s3: "迸发" },
+                { id: 35, name: "理性告别", rarity: 5, type: "手铳", s1: "力量提升", s2: "灼热伤害提升", s3: "追袭" },
+                { id: 36, name: "探骊", rarity: 5, type: "双手剑", s1: "力量提升", s2: "终结技效率提升", s3: "迸发" },
+                { id: 37, name: "向心之引", short: "艾维文娜适配", rarity: 5, type: "长柄武器", s1: "意志提升", s2: "电磁伤害提升", s3: "压制" },
+                { id: 38, name: "钢铁余音", short: "陈千语适配(五星)", rarity: 5, type: "单手剑", s1: "敏捷提升", s2: "物理伤害提升", s3: "巧技" },
+                { id: 39, name: "坚城铸造者", rarity: 5, type: "单手剑", s1: "智识提升", s2: "终结技效率提升", s3: "昂扬" },
+                { id: 40, name: "十二问", short: "弧光适配", rarity: 5, type: "单手剑", s1: "敏捷提升", s2: "攻击提升", s3: "附术" },
+                { id: 41, name: "莫奈何", rarity: 5, type: "施术单元", s1: "意志提升", s2: "终结技效率提升", s3: "昂扬" },
+                { id: 42, name: "迷失荒野", rarity: 5, type: "施术单元", s1: "智识提升", s2: "电磁伤害提升", s3: "附术" },
+                { id: 43, name: "作品：众生", rarity: 5, type: "手铳", s1: "敏捷提升", s2: "法术伤害提升", s3: "附术" },
+                { id: 44, name: "O.B.J.尖峰", rarity: 5, type: "长柄武器", s1: "意志提升", s2: "物理伤害提升", s3: "附术" },
+                { id: 45, name: "布道自由", short: "赛希适配", rarity: 5, type: "施术单元", s1: "意志提升", s2: "治疗效率提升", s3: "医疗" },
+                { id: 46, name: "古渠", rarity: 5, type: "双手剑", s1: "力量提升", s2: "源石技艺提升", s3: "残暴" },
+                { id: 47, name: "终点之声", short: "昼雪专武", chars: ["昼雪"], rarity: 5, type: "双手剑", s1: "力量提升", s2: "生命提升", s3: "医疗" },
+                { id: 48, name: "仰止", rarity: 5, type: "单手剑", s1: "敏捷提升", s2: "物理伤害提升", s3: "夜幕" },
+                { id: 49, name: "O.B.J.重荷", rarity: 5, type: "双手剑", s1: "力量提升", s2: "生命提升", s3: "效益" },
+                { id: 50, name: "悼亡诗", short: "五星通用拐", rarity: 5, type: "施术单元", s1: "智识提升", s2: "攻击提升", s3: "夜幕" },
+                { id: 51, name: "嵌合正义", rarity: 5, type: "长柄武器", s1: "力量提升", s2: "终结技效率提升", s3: "残暴" },
+                { id: 52, name: "显锋", rarity: 4, type: "单手剑", s1: "敏捷提升", s2: "物理伤害提升", s3: "压制" },
+                { id: 53, name: "浪潮", rarity: 4, type: "单手剑", s1: "智识提升", s2: "攻击提升", s3: "追袭" },
+                { id: 54, name: "工业零点一", rarity: 4, type: "双手剑", s1: "力量提升", s2: "攻击提升", s3: "压制" },
+                { id: 55, name: "淬火者", rarity: 4, type: "双手剑", s1: "意志提升", s2: "生命提升", s3: "粉碎" },
+                { id: 56, name: "寻路者道标", rarity: 4, type: "长柄武器", s1: "敏捷提升", s2: "攻击提升", s3: "昂扬" },
+                { id: 57, name: "天使杀手", rarity: 4, type: "长柄武器", s1: "意志提升", s2: "法术伤害提升", s3: "压制" },
+                { id: 58, name: "呼啸守卫", rarity: 4, type: "手铳", s1: "智识提升", s2: "攻击提升", s3: "压制" },
+                { id: 59, name: "长路", rarity: 4, type: "手铳", s1: "力量提升", s2: "法术伤害提升", s3: "追袭" },
+                { id: 60, name: "全自动骇新星", rarity: 4, type: "施术单元", s1: "智识提升", s2: "法术伤害提升", s3: "昂扬" },
+                { id: 61, name: "荧光雷羽", rarity: 4, type: "施术单元", s1: "意志提升", s2: "攻击提升", s3: "压制" }
+            ],
+            attr1_options: ["力量提升", "敏捷提升", "智识提升", "意志提升", "主能力提升"],
+            attr2_options: ["攻击提升", "防御提升", "生命提升", "暴击率提升", "物理伤害提升", "法术伤害提升", "灼热伤害提升", "寒冷伤害提升", "电磁伤害提升", "自然伤害提升", "源石技艺提升", "终结技效率提升", "治疗效率提升"],
+            attr3_options: ["压制", "迸发", "流转", "追袭", "夜幕", "切骨", "附术", "巧技", "效益", "残暴", "医疗", "粉碎", "昂扬", "强攻"]
+        };
+
+        const selectedFilters = { attr1: [], attr2: [], attr3: [] };
+        let selectedItemId = null;
+
+        function getRarityClass(rarity) {
+            return `rarity-${rarity}`;
+        }
+
+        function getTypeIcon(type) {
+            return TYPE_ICONS[type] || "📦";
+        }
+
+        function getAvailableDungeons(item) {
+            return DUNGEONS.filter(d => d.s2_pool.includes(item.s2) && d.s3_pool.includes(item.s3));
+        }
+
+        function combinations(arr, k) {
+            const result = [];
+            function backtrack(start, combo) {
+                if (combo.length === k) {
+                    result.push([...combo]);
+                    return;
+                }
+                for (let i = start; i < arr.length; i++) {
+                    combo.push(arr[i]);
+                    backtrack(i + 1, combo);
+                    combo.pop();
+                }
+            }
+            backtrack(0, []);
+            return result;
+        }
+
+        function getRelatedItemsByS2(dungeon, s1Combo, s2Option, currentItemId) {
+            return DATA.items.filter(item => {
+                if (item.id === currentItemId) return false;
+                if (!s1Combo.includes(item.s1)) return false;
+                if (item.s2 !== s2Option) return false;
+                if (!dungeon.s3_pool.includes(item.s3)) return false;
+                return true;
+            });
+        }
+
+        function getRelatedItemsByS3(dungeon, s1Combo, s3Option, currentItemId) {
+            return DATA.items.filter(item => {
+                if (item.id === currentItemId) return false;
+                if (!s1Combo.includes(item.s1)) return false;
+                if (!dungeon.s2_pool.includes(item.s2)) return false;
+                if (item.s3 !== s3Option) return false;
+                return true;
+            });
+        }
+
+        function renderFilterOptions() {
+            const containers = {
+                attr1: document.getElementById('attr1-options'),
+                attr2: document.getElementById('attr2-options'),
+                attr3: document.getElementById('attr3-options')
+            };
+
+            Object.entries(containers).forEach(([key, container]) => {
+                const options = DATA[`${key}_options`];
+                container.innerHTML = options.map(opt => `
+                    <label class="filter-option" data-attr="${key}" data-value="${opt}">
+                        <input type="checkbox" value="${opt}">
+                        <span class="checkmark"></span>
+                        <span>${opt}</span>
+                    </label>
+                `).join('');
+            });
+
+            document.querySelectorAll('.filter-option').forEach(label => {
+                label.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    label.classList.toggle('selected');
+                    const attr = label.dataset.attr;
+                    const value = label.dataset.value;
+                    const idx = selectedFilters[attr].indexOf(value);
+                    if (idx > -1) {
+                        selectedFilters[attr].splice(idx, 1);
+                    } else {
+                        selectedFilters[attr].push(value);
+                    }
+                    filterItems();
+                });
+            });
+        }
+
+        function filterItems() {
+            const filtered = DATA.items.filter(item => {
+                const attr1Match = selectedFilters.attr1.length === 0 || selectedFilters.attr1.includes(item.s1);
+                const attr2Match = selectedFilters.attr2.length === 0 || selectedFilters.attr2.includes(item.s2);
+                const attr3Match = selectedFilters.attr3.length === 0 || selectedFilters.attr3.includes(item.s3);
+                return attr1Match && attr2Match && attr3Match;
+            });
+
+            renderItemList(filtered);
+            if (selectedItemId && !filtered.find(i => i.id === selectedItemId)) {
+                selectedItemId = null;
+                renderDetail();
+            }
+        }
+
+        function renderItemList(items) {
+            document.getElementById('item-count').textContent = items.length;
+            const container = document.getElementById('item-list');
+            container.innerHTML = items.map(item => `
+                <div class="item-card ${item.id === selectedItemId ? 'selected' : ''}" data-id="${item.id}">
+                    <div class="item-icon">${getTypeIcon(item.type)}</div>
+                    <div class="item-info">
+                        <div class="item-name">${item.name}</div>
+                        <div class="item-meta">
+                            <span class="item-rarity ${getRarityClass(item.rarity)}">${"★".repeat(item.rarity)}</span>
+                            <span>${item.type}</span>
+                        </div>
+                        <div class="item-attrs">${item.s1} · ${item.s2} · ${item.s3}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            container.querySelectorAll('.item-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    selectedItemId = parseInt(card.dataset.id);
+                    document.querySelectorAll('.item-card').forEach(c => c.classList.remove('selected'));
+                    card.classList.add('selected');
+                    renderDetail();
+                });
+            });
+        }
+
+        function renderDetail() {
+            const panel = document.getElementById('detail-panel');
+            if (!selectedItemId) {
+                panel.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚔️</div>
+                        <div>选择武器查看详情</div>
+                    </div>
+                `;
+                return;
+            }
+
+            const item = DATA.items.find(i => i.id === selectedItemId);
+            const shortHtml = item.short ? `<div class="short">${item.short}</div>` : '';
+
+            const dungeons = getAvailableDungeons(item);
+
+            let obtainHtml = '';
+            if (dungeons.length === 0) {
+                obtainHtml = '<div class="no-obtain">该武器暂无已知获取途径</div>';
+            } else {
+                const allS1Combos = combinations(ALL_S1, 3);
+
+                obtainHtml = '<div class="dungeon-list">' + dungeons.map(d => {
+                    const s2Results = [];
+                    const s3Results = [];
+
+                    allS1Combos.forEach(s1Combo => {
+                        const byS2 = getRelatedItemsByS2(d, s1Combo, item.s2, item.id);
+                        if (byS2.length > 0) {
+                            s2Results.push({ combo: s1Combo, items: byS2, ids: new Set(byS2.map(i => i.id)) });
+                        }
+                        const byS3 = getRelatedItemsByS3(d, s1Combo, item.s3, item.id);
+                        if (byS3.length > 0) {
+                            s3Results.push({ combo: s1Combo, items: byS3, ids: new Set(byS3.map(i => i.id)) });
+                        }
+                    });
+
+                    const isSubsetOf = (setA, setB) => {
+                        for (const id of setA) {
+                            if (!setB.has(id)) return false;
+                        }
+                        return true;
+                    };
+
+                    const filterIndependent = (results) => {
+                        if (results.length === 0) return [];
+
+                        const deduped = [];
+                        const seen = new Set();
+                        for (const r of results) {
+                            const key = Array.from(r.ids).sort().join(',');
+                            if (!seen.has(key)) {
+                                seen.add(key);
+                                deduped.push(r);
+                            }
+                        }
+
+                        const independent = [];
+                        const sorted = [...deduped].sort((a, b) => b.items.length - a.items.length);
+                        for (let i = 0; i < sorted.length; i++) {
+                            let isSub = false;
+                            for (let j = 0; j < sorted.length; j++) {
+                                if (i !== j && sorted[i].items.length < sorted[j].items.length && isSubsetOf(sorted[i].ids, sorted[j].ids)) {
+                                    isSub = true;
+                                    break;
+                                }
+                            }
+                            if (!isSub) {
+                                independent.push(sorted[i]);
+                            }
+                        }
+                        return independent;
+                    };
+
+                    const independentS2 = filterIndependent(s2Results);
+                    const independentS3 = filterIndependent(s3Results);
+
+                    let relatedHtml = '';
+
+                    if (independentS2.length > 0) {
+                        relatedHtml += `<div class="related-items">
+                            <div class="related-title">框选S1+S2（s2=${item.s2}，${independentS2.length}种组合）</div>
+                            <div class="related-list" style="flex-direction:column;gap:8px">`;
+                        independentS2.forEach(r => {
+                            relatedHtml += `<div style="margin-bottom:6px">
+                                <span style="color:#e94560;font-size:11px">s1=${r.combo.join('/')}（${r.items.length}把）</span>
+                                <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">`;
+                            r.items.forEach(ri => {
+                                relatedHtml += `<span class="related-item" data-id="${ri.id}">
+                                    <span class="${getRarityClass(ri.rarity)}">${"★".repeat(ri.rarity)}</span>
+                                    ${ri.name}<span style="color:#888;font-size:10px"> · ${ri.s2} · ${ri.s3}</span>
+                                </span>`;
+                            });
+                            relatedHtml += `</div></div>`;
+                        });
+                        relatedHtml += `</div></div>`;
+                    }
+
+                    if (independentS3.length > 0) {
+                        relatedHtml += `<div class="related-items" style="margin-top:12px">
+                            <div class="related-title">框选S1+S3（s3=${item.s3}，${independentS3.length}种组合）</div>
+                            <div class="related-list" style="flex-direction:column;gap:8px">`;
+                        independentS3.forEach(r => {
+                            relatedHtml += `<div style="margin-bottom:6px">
+                                <span style="color:#ffd700;font-size:11px">s1=${r.combo.join('/')}（${r.items.length}把）</span>
+                                <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">`;
+                            r.items.forEach(ri => {
+                                relatedHtml += `<span class="related-item" data-id="${ri.id}">
+                                    <span class="${getRarityClass(ri.rarity)}">${"★".repeat(ri.rarity)}</span>
+                                    ${ri.name}<span style="color:#888;font-size:10px"> · ${ri.s2} · ${ri.s3}</span>
+                                </span>`;
+                            });
+                            relatedHtml += `</div></div>`;
+                        });
+                        relatedHtml += `</div></div>`;
+                    }
+
+                    return `
+                        <div class="dungeon-item">
+                            <div class="dungeon-name">${d.name}</div>
+                            <div class="dungeon-pools">
+                                <span class="pool-tag s2">S2: ${d.s2_pool.slice(0, 4).join(' / ')}...</span>
+                                <span class="pool-tag s3">S3: ${d.s3_pool.slice(0, 4).join(' / ')}...</span>
+                            </div>
+                            ${relatedHtml}
+                        </div>
+                    `;
+                }).join('') + '</div>';
+            }
+
+            panel.innerHTML = `
+                <div class="detail-header">
+                    <div class="detail-icon">${getTypeIcon(item.type)}</div>
+                    <div class="detail-title">
+                        <h1>${item.name}</h1>
+                        <div class="meta">
+                            <span class="item-rarity ${getRarityClass(item.rarity)}">${"★".repeat(item.rarity)}</span>
+                            <span class="type-icon">${getTypeIcon(item.type)}</span>
+                            <span>${item.type}</span>
+                        </div>
+                        ${shortHtml}
+                    </div>
+                </div>
+                <div class="detail-content">
+                    <div class="detail-section">
+                        <h3>武器属性</h3>
+                        <div class="attr-display">
+                            <span class="attr-tag pos1">位置一：${item.s1}</span>
+                            <span class="attr-tag pos2">位置二：${item.s2}</span>
+                            <span class="attr-tag pos3">位置三：${item.s3}</span>
+                        </div>
+                    </div>
+                    <div class="detail-section obtain-section">
+                        <h3>可获取地点</h3>
+                        ${obtainHtml}
+                    </div>
+                </div>
+            `;
+
+            panel.querySelectorAll('.related-item[data-id]').forEach(el => {
+                el.addEventListener('click', () => {
+                    const id = parseInt(el.dataset.id);
+                    selectedItemId = id;
+                    document.querySelectorAll('.item-card').forEach(c => c.classList.remove('selected'));
+                    const card = document.querySelector(`.item-card[data-id="${id}"]`);
+                    if (card) {
+                        card.classList.add('selected');
+                        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                    renderDetail();
+                });
+            });
+        }
+
+        renderFilterOptions();
+        filterItems();
+
+        const filterToggle = document.getElementById('filter-toggle');
+        const filterSection = document.getElementById('filter-section');
+        const detailPanel = document.getElementById('detail-panel');
+        const mobileBackBtn = document.getElementById('mobile-back-btn');
+
+        filterToggle.addEventListener('click', () => {
+            filterSection.classList.toggle('collapsed');
+            filterToggle.classList.toggle('collapsed');
+        });
+
+        mobileBackBtn.addEventListener('click', () => {
+            detailPanel.classList.remove('active');
+            mobileBackBtn.style.display = 'none';
+        });
+
+        const originalRenderDetail = renderDetail;
+        renderDetail = function() {
+            originalRenderDetail();
+            if (window.innerWidth <= 768 && selectedItemId) {
+                detailPanel.classList.add('active');
+                mobileBackBtn.style.display = 'flex';
+            }
+        };
+
+        const originalRenderItemList = renderItemList;
+        renderItemList = function(items) {
+            originalRenderItemList(items);
+            if (window.innerWidth <= 768) {
+                document.querySelectorAll('.item-card').forEach(card => {
+                    card.addEventListener('click', () => {
+                        detailPanel.classList.add('active');
+                        mobileBackBtn.style.display = 'flex';
+                    });
+                });
+            }
+        };
+    </script>
+</body>
+</html>
