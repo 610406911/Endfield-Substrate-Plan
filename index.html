@@ -49,6 +49,71 @@
             margin-bottom: 8px;
         }
 
+        .search-box {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 8px 12px;
+            background: #1a1a2e;
+            border: 1px solid #0f3460;
+            border-radius: 6px;
+            color: #eee;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .search-box input:focus {
+            border-color: #e94560;
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #16213e;
+            border: 1px solid #0f3460;
+            border-radius: 6px;
+            margin-top: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+        }
+
+        .search-results.active {
+            display: block;
+        }
+
+        .search-result-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            border-bottom: 1px solid #0f3460;
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-result-item:hover {
+            background: #1a1a2e;
+        }
+
+        .search-result-item .rarity {
+            font-weight: bold;
+            margin-right: 6px;
+        }
+
+        .search-result-item .type {
+            color: #888;
+            font-size: 11px;
+            margin-left: 6px;
+        }
+
         .filter-options {
             display: flex;
             flex-wrap: wrap;
@@ -608,6 +673,14 @@
             <span class="toggle-icon">▼</span>
         </div>
         <div class="filter-section" id="filter-section">
+            <div class="search-box">
+                <input type="text" id="weapon-search" placeholder="搜索武器名称..." autocomplete="off">
+                <div class="search-results" id="search-results"></div>
+            </div>
+            <div class="filter-group">
+                <div class="filter-group-title">武器类型</div>
+                <div class="filter-options" id="weapon-type-options"></div>
+            </div>
             <h3>属性筛选</h3>
             <div class="filter-group">
                 <div class="filter-group-title">Type 1</div>
@@ -639,8 +712,10 @@
         let TYPE_ICONS = {};
         let DUNGEONS = [];
         let ALL_S1 = [];
+        let WEAPON_TYPES = [];
         let DATA = { items: [], type1_options: [], type2_options: [], type3_options: [] };
         const selectedFilters = { type1: [], type2: [], type3: [] };
+        const selectedWeaponTypes = [];
         let selectedItemId = null;
 
         async function loadData() {
@@ -653,11 +728,14 @@
             TYPE_ICONS = typeIcons;
             DUNGEONS = dungeons;
             ALL_S1 = filters.type1_options;
+            WEAPON_TYPES = [...new Set(weapons.map(w => w.type))].sort();
             DATA = { items: weapons, ...filters };
         }
 
         function init() {
+            renderWeaponTypeOptions();
             renderFilterOptions();
+            initSearch();
             filterItems();
 
             const filterToggle = document.getElementById('filter-toggle');
@@ -699,6 +777,100 @@
         }
 
         loadData().then(init);
+
+        function renderWeaponTypeOptions() {
+            const container = document.getElementById('weapon-type-options');
+            container.innerHTML = WEAPON_TYPES.map(type => `
+                <div class="filter-option" data-type="${type}">
+                    <span class="checkmark"></span>
+                    <span>${getTypeIcon(type)} ${type}</span>
+                </div>
+            `).join('');
+
+            container.addEventListener('click', (e) => {
+                const option = e.target.closest('.filter-option');
+                if (!option) return;
+                const type = option.dataset.type;
+                if (option.classList.contains('selected')) {
+                    option.classList.remove('selected');
+                    const idx = selectedWeaponTypes.indexOf(type);
+                    if (idx > -1) selectedWeaponTypes.splice(idx, 1);
+                } else {
+                    option.classList.add('selected');
+                    selectedWeaponTypes.push(type);
+                }
+                filterItems();
+            });
+        }
+
+        function initSearch() {
+            const searchInput = document.getElementById('weapon-search');
+            const searchResults = document.getElementById('search-results');
+
+            searchInput.addEventListener('input', () => {
+                const query = searchInput.value.trim().toLowerCase();
+                if (query.length === 0) {
+                    searchResults.classList.remove('active');
+                    return;
+                }
+                const matches = DATA.items.filter(item => item.name.toLowerCase().includes(query));
+                if (matches.length === 0) {
+                    searchResults.innerHTML = '<div class="search-result-item" style="color:#888">无匹配武器</div>';
+                } else if (matches.length > 10) {
+                    searchResults.innerHTML = matches.slice(0, 10).map(item => `
+                        <div class="search-result-item" data-id="${item.id}">
+                            <span class="rarity ${getRarityClass(item.rarity)}">${"★".repeat(item.rarity)}</span>
+                            ${item.name}
+                            <span class="type">${item.type}</span>
+                        </div>
+                    `).join('') + `<div class="search-result-item" style="color:#888">...还有 ${matches.length - 10} 项</div>`;
+                } else {
+                    searchResults.innerHTML = matches.map(item => `
+                        <div class="search-result-item" data-id="${item.id}">
+                            <span class="rarity ${getRarityClass(item.rarity)}">${"★".repeat(item.rarity)}</span>
+                            ${item.name}
+                            <span class="type">${item.type}</span>
+                        </div>
+                    `).join('');
+                }
+                searchResults.classList.add('active');
+            });
+
+            searchResults.addEventListener('click', (e) => {
+                const item = e.target.closest('.search-result-item[data-id]');
+                if (item) {
+                    const id = parseInt(item.dataset.id);
+                    selectWeaponById(id);
+                    searchInput.value = '';
+                    searchResults.classList.remove('active');
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.search-box')) {
+                    searchResults.classList.remove('active');
+                }
+            });
+        }
+
+        function selectWeaponById(id) {
+            selectedItemId = id;
+            selectedFilters.type1 = [];
+            selectedFilters.type2 = [];
+            selectedFilters.type3 = [];
+            selectedWeaponTypes.length = 0;
+            document.querySelectorAll('#weapon-type-options .filter-option').forEach(l => l.classList.remove('selected'));
+            document.querySelectorAll('#type1-options .filter-option, #type2-options .filter-option, #type3-options .filter-option').forEach(l => l.classList.remove('selected'));
+            filterItems();
+            document.querySelectorAll('.item-card').forEach(c => c.classList.remove('selected'));
+            const card = document.querySelector(`.item-card[data-id="${id}"]`);
+            if (card) card.classList.add('selected');
+            renderDetail();
+            if (window.innerWidth <= 768) {
+                document.getElementById('detail-panel').classList.add('active');
+                document.getElementById('mobile-back-btn').style.display = 'flex';
+            }
+        }
 
         function getRarityClass(rarity) {
             return `rarity-${rarity}`;
@@ -751,9 +923,9 @@
 
         function renderFilterOptions() {
             const containers = {
-                attr1: document.getElementById('type1-options'),
-                attr2: document.getElementById('type2-options'),
-                attr3: document.getElementById('type3-options')
+                type1: document.getElementById('type1-options'),
+                type2: document.getElementById('type2-options'),
+                type3: document.getElementById('type3-options')
             };
 
             Object.entries(containers).forEach(([key, container]) => {
@@ -767,7 +939,7 @@
                 `).join('');
             });
 
-            document.querySelectorAll('.filter-option').forEach(label => {
+            document.querySelectorAll('#type1-options .filter-option, #type2-options .filter-option, #type3-options .filter-option').forEach(label => {
                 label.addEventListener('click', (e) => {
                     e.preventDefault();
                     label.classList.toggle('selected');
@@ -789,7 +961,8 @@
                 const attr1Match = selectedFilters.type1.length === 0 || selectedFilters.type1.includes(item.type1);
                 const attr2Match = selectedFilters.type2.length === 0 || selectedFilters.type2.includes(item.type2);
                 const attr3Match = selectedFilters.type3.length === 0 || selectedFilters.type3.includes(item.type3);
-                return attr1Match && attr2Match && attr3Match;
+                const typeMatch = selectedWeaponTypes.length === 0 || selectedWeaponTypes.includes(item.type);
+                return attr1Match && attr2Match && attr3Match && typeMatch;
             });
 
             renderItemList(filtered);
@@ -999,45 +1172,6 @@
             });
         }
 
-        renderFilterOptions();
-        filterItems();
-
-        const filterToggle = document.getElementById('filter-toggle');
-        const filterSection = document.getElementById('filter-section');
-        const detailPanel = document.getElementById('detail-panel');
-        const mobileBackBtn = document.getElementById('mobile-back-btn');
-
-        filterToggle.addEventListener('click', () => {
-            filterSection.classList.toggle('collapsed');
-            filterToggle.classList.toggle('collapsed');
-        });
-
-        mobileBackBtn.addEventListener('click', () => {
-            detailPanel.classList.remove('active');
-            mobileBackBtn.style.display = 'none';
-        });
-
-        const originalRenderDetail = renderDetail;
-        renderDetail = function() {
-            originalRenderDetail();
-            if (window.innerWidth <= 768 && selectedItemId) {
-                detailPanel.classList.add('active');
-                mobileBackBtn.style.display = 'flex';
-            }
-        };
-
-        const originalRenderItemList = renderItemList;
-        renderItemList = function(items) {
-            originalRenderItemList(items);
-            if (window.innerWidth <= 768) {
-                document.querySelectorAll('.item-card').forEach(card => {
-                    card.addEventListener('click', () => {
-                        detailPanel.classList.add('active');
-                        mobileBackBtn.style.display = 'flex';
-                    });
-                });
-            }
-        };
     </script>
 </body>
 </html>
