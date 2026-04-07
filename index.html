@@ -231,13 +231,6 @@
             font-size: 16px;
         }
 
-        .detail-title .short {
-            margin-top: 8px;
-            font-size: 13px;
-            color: #e94560;
-            font-style: italic;
-        }
-
         .detail-content {
             padding: 25px 30px;
             overflow-y: auto;
@@ -617,16 +610,16 @@
         <div class="filter-section" id="filter-section">
             <h3>属性筛选</h3>
             <div class="filter-group">
-                <div class="filter-group-title">位置一</div>
-                <div class="filter-options" id="attr1-options"></div>
+                <div class="filter-group-title">Type 1</div>
+                <div class="filter-options" id="type1-options"></div>
             </div>
             <div class="filter-group">
-                <div class="filter-group-title">位置二</div>
-                <div class="filter-options" id="attr2-options"></div>
+                <div class="filter-group-title">Type 2</div>
+                <div class="filter-options" id="type2-options"></div>
             </div>
             <div class="filter-group">
-                <div class="filter-group-title">位置三</div>
-                <div class="filter-options" id="attr3-options"></div>
+                <div class="filter-group-title">Type 3</div>
+                <div class="filter-options" id="type3-options"></div>
             </div>
         </div>
         <div class="item-list-section">
@@ -646,8 +639,8 @@
         let TYPE_ICONS = {};
         let DUNGEONS = [];
         let ALL_S1 = [];
-        let DATA = { items: [], attr1_options: [], attr2_options: [], attr3_options: [] };
-        const selectedFilters = { attr1: [], attr2: [], attr3: [] };
+        let DATA = { items: [], type1_options: [], type2_options: [], type3_options: [] };
+        const selectedFilters = { type1: [], type2: [], type3: [] };
         let selectedItemId = null;
 
         async function loadData() {
@@ -659,7 +652,7 @@
             ]);
             TYPE_ICONS = typeIcons;
             DUNGEONS = dungeons;
-            ALL_S1 = filters.attr1_options;
+            ALL_S1 = filters.type1_options;
             DATA = { items: weapons, ...filters };
         }
 
@@ -716,7 +709,7 @@
         }
 
         function getAvailableDungeons(item) {
-            return DUNGEONS.filter(d => d.s2_pool.includes(item.s2) && d.s3_pool.includes(item.s3));
+            return DUNGEONS.filter(d => d.type2_pool.includes(item.type2) && d.type3_pool.includes(item.type3));
         }
 
         function combinations(arr, k) {
@@ -739,9 +732,9 @@
         function getRelatedItemsByS2(dungeon, s1Combo, s2Option, currentItemId) {
             return DATA.items.filter(item => {
                 if (item.id === currentItemId) return false;
-                if (!s1Combo.includes(item.s1)) return false;
-                if (item.s2 !== s2Option) return false;
-                if (!dungeon.s3_pool.includes(item.s3)) return false;
+                if (!s1Combo.includes(item.type1)) return false;
+                if (item.type2 !== s2Option) return false;
+                if (!dungeon.type3_pool.includes(item.type3)) return false;
                 return true;
             });
         }
@@ -749,18 +742,18 @@
         function getRelatedItemsByS3(dungeon, s1Combo, s3Option, currentItemId) {
             return DATA.items.filter(item => {
                 if (item.id === currentItemId) return false;
-                if (!s1Combo.includes(item.s1)) return false;
-                if (!dungeon.s2_pool.includes(item.s2)) return false;
-                if (item.s3 !== s3Option) return false;
+                if (!s1Combo.includes(item.type1)) return false;
+                if (!dungeon.type2_pool.includes(item.type2)) return false;
+                if (item.type3 !== s3Option) return false;
                 return true;
             });
         }
 
         function renderFilterOptions() {
             const containers = {
-                attr1: document.getElementById('attr1-options'),
-                attr2: document.getElementById('attr2-options'),
-                attr3: document.getElementById('attr3-options')
+                attr1: document.getElementById('type1-options'),
+                attr2: document.getElementById('type2-options'),
+                attr3: document.getElementById('type3-options')
             };
 
             Object.entries(containers).forEach(([key, container]) => {
@@ -793,9 +786,9 @@
 
         function filterItems() {
             const filtered = DATA.items.filter(item => {
-                const attr1Match = selectedFilters.attr1.length === 0 || selectedFilters.attr1.includes(item.s1);
-                const attr2Match = selectedFilters.attr2.length === 0 || selectedFilters.attr2.includes(item.s2);
-                const attr3Match = selectedFilters.attr3.length === 0 || selectedFilters.attr3.includes(item.s3);
+                const attr1Match = selectedFilters.type1.length === 0 || selectedFilters.type1.includes(item.type1);
+                const attr2Match = selectedFilters.type2.length === 0 || selectedFilters.type2.includes(item.type2);
+                const attr3Match = selectedFilters.type3.length === 0 || selectedFilters.type3.includes(item.type3);
                 return attr1Match && attr2Match && attr3Match;
             });
 
@@ -818,7 +811,7 @@
                             <span class="item-rarity ${getRarityClass(item.rarity)}">${"★".repeat(item.rarity)}</span>
                             <span>${item.type}</span>
                         </div>
-                        <div class="item-attrs">${item.s1} · ${item.s2} · ${item.s3}</div>
+                        <div class="item-attrs">${item.type1} · ${item.type2} · ${item.type3}</div>
                     </div>
                 </div>
             `).join('');
@@ -846,7 +839,6 @@
             }
 
             const item = DATA.items.find(i => i.id === selectedItemId);
-            const shortHtml = item.short ? `<div class="short">${item.short}</div>` : '';
 
             const dungeons = getAvailableDungeons(item);
 
@@ -861,11 +853,11 @@
                     const s3Results = [];
 
                     allS1Combos.forEach(s1Combo => {
-                        const byS2 = getRelatedItemsByS2(d, s1Combo, item.s2, item.id);
+                        const byS2 = getRelatedItemsByS2(d, s1Combo, item.type2, item.id);
                         if (byS2.length > 0) {
                             s2Results.push({ combo: s1Combo, items: byS2, ids: new Set(byS2.map(i => i.id)) });
                         }
-                        const byS3 = getRelatedItemsByS3(d, s1Combo, item.s3, item.id);
+                        const byS3 = getRelatedItemsByS3(d, s1Combo, item.type3, item.id);
                         if (byS3.length > 0) {
                             s3Results.push({ combo: s1Combo, items: byS3, ids: new Set(byS3.map(i => i.id)) });
                         }
@@ -915,16 +907,16 @@
 
                     if (independentS2.length > 0) {
                         relatedHtml += `<div class="related-items">
-                            <div class="related-title">框选S1+S2（s2=${item.s2}，${independentS2.length}种组合）</div>
+                            <div class="related-title">框选Type1+Type2（type2=${item.type2}，${independentS2.length}种组合）</div>
                             <div class="related-list" style="flex-direction:column;gap:8px">`;
                         independentS2.forEach(r => {
                             relatedHtml += `<div style="margin-bottom:6px">
-                                <span style="color:#e94560;font-size:11px">s1=${r.combo.join('/')}（${r.items.length}把）</span>
+                                <span style="color:#e94560;font-size:11px">type1=${r.combo.join('/')}（${r.items.length}把）</span>
                                 <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">`;
                             r.items.forEach(ri => {
                                 relatedHtml += `<span class="related-item" data-id="${ri.id}">
                                     <span class="${getRarityClass(ri.rarity)}">${"★".repeat(ri.rarity)}</span>
-                                    ${ri.name}<span style="color:#888;font-size:10px"> · ${ri.s2} · ${ri.s3}</span>
+                                    ${ri.name}<span style="color:#888;font-size:10px"> · ${ri.type2} · ${ri.type3}</span>
                                 </span>`;
                             });
                             relatedHtml += `</div></div>`;
@@ -934,16 +926,16 @@
 
                     if (independentS3.length > 0) {
                         relatedHtml += `<div class="related-items" style="margin-top:12px">
-                            <div class="related-title">框选S1+S3（s3=${item.s3}，${independentS3.length}种组合）</div>
+                            <div class="related-title">框选Type1+Type3（type3=${item.type3}，${independentS3.length}种组合）</div>
                             <div class="related-list" style="flex-direction:column;gap:8px">`;
                         independentS3.forEach(r => {
                             relatedHtml += `<div style="margin-bottom:6px">
-                                <span style="color:#ffd700;font-size:11px">s1=${r.combo.join('/')}（${r.items.length}把）</span>
+                                <span style="color:#ffd700;font-size:11px">type1=${r.combo.join('/')}（${r.items.length}把）</span>
                                 <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">`;
                             r.items.forEach(ri => {
                                 relatedHtml += `<span class="related-item" data-id="${ri.id}">
                                     <span class="${getRarityClass(ri.rarity)}">${"★".repeat(ri.rarity)}</span>
-                                    ${ri.name}<span style="color:#888;font-size:10px"> · ${ri.s2} · ${ri.s3}</span>
+                                    ${ri.name}<span style="color:#888;font-size:10px"> · ${ri.type2} · ${ri.type3}</span>
                                 </span>`;
                             });
                             relatedHtml += `</div></div>`;
@@ -955,8 +947,8 @@
                         <div class="dungeon-item">
                             <div class="dungeon-name">${d.name}</div>
                             <div class="dungeon-pools">
-                                <span class="pool-tag s2">S2: ${d.s2_pool.slice(0, 4).join(' / ')}...</span>
-                                <span class="pool-tag s3">S3: ${d.s3_pool.slice(0, 4).join(' / ')}...</span>
+                                <span class="pool-tag s2">Type2: ${d.type2_pool.slice(0, 4).join(' / ')}...</span>
+                                <span class="pool-tag s3">Type3: ${d.type3_pool.slice(0, 4).join(' / ')}...</span>
                             </div>
                             ${relatedHtml}
                         </div>
@@ -974,16 +966,15 @@
                             <span class="type-icon">${getTypeIcon(item.type)}</span>
                             <span>${item.type}</span>
                         </div>
-                        ${shortHtml}
                     </div>
                 </div>
                 <div class="detail-content">
                     <div class="detail-section">
                         <h3>武器属性</h3>
                         <div class="attr-display">
-                            <span class="attr-tag pos1">位置一：${item.s1}</span>
-                            <span class="attr-tag pos2">位置二：${item.s2}</span>
-                            <span class="attr-tag pos3">位置三：${item.s3}</span>
+                            <span class="attr-tag pos1">位置一：${item.type1}</span>
+                            <span class="attr-tag pos2">位置二：${item.type2}</span>
+                            <span class="attr-tag pos3">位置三：${item.type3}</span>
                         </div>
                     </div>
                     <div class="detail-section obtain-section">
